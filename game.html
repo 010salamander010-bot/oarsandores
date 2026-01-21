@@ -8,26 +8,22 @@
     <style>
         :root { --bg-dark: #1a1a1a; --bg-panel: #2d2d2d; --accent: #9147ff; --text: #ffffff; }
         body { background-color: var(--bg-dark); color: var(--text); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        
-        nav { background: #000; padding: 0 20px; height: 50px; display: flex; align-items: center; border-bottom: 2px solid #333; box-shadow: 0 2px 10px rgba(0,0,0,0.5); z-index: 100; transition: transform 0.3s; }
+        nav { background: #000; padding: 0 20px; height: 50px; display: flex; align-items: center; border-bottom: 2px solid #333; box-shadow: 0 2px 10px rgba(0,0,0,0.5); z-index: 100; }
         nav h1 { margin: 0 20px 0 0; font-size: 18px; color: var(--accent); }
         .nav-btn { background: transparent; border: none; color: #888; padding: 10px 15px; cursor: pointer; font-weight: bold; transition: 0.2s; border-bottom: 3px solid transparent; }
         .nav-btn:hover { color: white; }
         .nav-btn.active { color: white; border-bottom: 3px solid var(--accent); }
-        
-        #main-view { flex: 1; position: relative; overflow: hidden; display: flex; }
+        #main-view { flex: 1; position: relative; overflow: hidden; }
         .view-section { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: none; background: var(--bg-dark); }
-        .view-section.active { display: flex; width: 100%; height: 100%; }
-        
+        .view-section.active { display: flex; }
         #stream-view { height: 100%; }
-        #stream-container { flex: 3; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #000; position: relative; border-right: 2px solid #333; overflow: hidden; }
-        #chat-container { flex: 1; background: #18181b; display: flex; flex-direction: column; min-width: 300px; max-width: 400px; border-left: 1px solid #333; transition: margin-right 0.3s; }
-        
+        #stream-container { flex: 3; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #000; position: relative; border-right: 2px solid #333; }
+        #chat-container { flex: 1; background: #18181b; display: flex; flex-direction: column; min-width: 300px; max-width: 400px; border-left: 1px solid #333; }
         #chat-controls { padding: 10px; background: #222; border-top: 1px solid #333; display: flex; flex-direction: column; gap: 5px; }
         #chat-controls select, #chat-controls input { padding: 8px; background: #111; border: 1px solid #444; color: white; border-radius: 4px; }
-        
-        #game-stage { position: relative; width: 800px; height: 600px; background: #000; box-shadow: 0 0 20px rgba(0,0,0,0.5); overflow: hidden; transform-origin: center; transition: transform 0.2s; }
+        #game-stage { position: relative; width: 800px; height: 600px; background: #000; box-shadow: 0 0 20px rgba(0,0,0,0.5); overflow: hidden; }
         .game-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        /* LAYER ORDER: Map (1) -> Items (2) -> Entities (3) -> Foreground/Sails (5) -> UI (10) */
         #map-layer { z-index: 1; } 
         #item-layer { z-index: 2; } 
         #entity-layer { z-index: 3; } 
@@ -39,21 +35,16 @@
         .sprite { position: absolute; width: 40px; height: 40px; transition: top 0.2s ease-out, left 0.2s ease-out; object-fit: contain; }
         .mob-sprite { filter: drop-shadow(0 0 2px red); }
         .player-sprite { filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5)); }
-        
-        #game-ui { position: absolute; top: 20px; left: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 100; transition: all 0.3s; }
+        #game-ui { position: absolute; top: 20px; left: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 10; }
         #squad-ui { background: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; border-left: 5px solid var(--accent); min-width: 200px; }
         #level-ui { background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 8px; font-size: 20px; font-weight: bold; color: #f1c40f; text-align: center; border: 2px solid #f1c40f; }
-        
         .squad-member { display: flex; align-items: center; margin-bottom: 5px; font-size: 14px; }
         .squad-status { width: 10px; height: 10px; border-radius: 50%; margin-right: 10px; }
         .alive { background: #2ecc71; } .dead { background: #e74c3c; } .frozen { background: #3498db; }
-        
         #turn-timer { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 8px; font-size: 24px; font-weight: bold; color: #f1c40f; z-index: 10; }
-        
         #twitch-status { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 4px; font-size: 12px; color: #aaa; z-index: 100; }
         .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: red; margin-right: 5px; }
         .connected .status-dot { background: #00ff00; }
-        
         #pause-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); color: white; display: none; align-items: center; justify-content: center; font-size: 30px; font-weight: bold; z-index: 50; }
         #ad-break-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(145, 71, 255, 0.3); color: white; display: none; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; z-index: 45; border: 4px solid #9147ff; pointer-events: none;}
         
@@ -99,13 +90,14 @@
             cursor: pointer; z-index: 300; font-weight: bold;
         }
         body.fullscreen-mode #btn-exit-fs { display: block; }
-
-        /* UI Positioning in Fullscreen - Move to Side if space allows */
-        body.fullscreen-mode #game-ui {
-            left: 20px;
-            top: 20px;
-            /* In FS, the map centers, so left:20px might overlay. 
-               We will use JS resize to push it to the black bars if possible. */
+        body.fullscreen-mode #game-ui { left: 20px; top: 20px; }
+        body.fullscreen-mode #queue-ui { left: 20px; top: 180px; }
+        
+        #queue-ui {
+            position: absolute; bottom: 40px; left: 20px;
+            background: rgba(0,0,0,0.6); padding: 10px;
+            border-radius: 5px; color: #aaa; font-size: 12px;
+            z-index: 90; pointer-events: none;
         }
     </style>
 </head>
@@ -140,6 +132,7 @@
                         <div id="squad-list"></div>
                     </div>
                 </div>
+                <div id="queue-ui">Waiting in Queue: <span id="queue-count">0</span></div>
                 <div id="turn-timer">TICK: <span id="timer-val">Wait</span></div>
                 <div id="twitch-status"><span class="status-dot"></span> <span id="twitch-status-text">Disconnected (Simulating)</span></div>
             </div>
@@ -376,9 +369,20 @@ function handleJoin(username) {
         const newUser = { name: username, gold: 0, inventory: [] };
         USER_DATABASE.push(newUser);
         saveUserDataLocal();
+        MATCHMAKING_QUEUE.push(username); // Add to Queue
         const select = document.getElementById('shop-user-select');
         const opt = document.createElement('option'); opt.value = USER_DATABASE.length-1; opt.innerText = username; select.appendChild(opt);
-        addSystemMessage(`👋 NEW RAIDER JOINED: ${username}`);
+        addSystemMessage(`👋 NEW RAIDER JOINED: ${username} (Queue: ${MATCHMAKING_QUEUE.length})`);
+        updateQueueUI();
+    } else {
+        // If already in DB, check if active or queued
+        const inGame = players.some(p => p.name.toLowerCase() === username.toLowerCase());
+        const inQueue = MATCHMAKING_QUEUE.includes(username);
+        if(!inGame && !inQueue) {
+            MATCHMAKING_QUEUE.push(username);
+            addSystemMessage(`📜 ${username} re-queued (Pos: ${MATCHMAKING_QUEUE.length})`);
+            updateQueueUI();
+        }
     }
 }
 
@@ -422,6 +426,7 @@ function updateTickRate(val) { CONFIG.tickRate = parseInt(val); lastTickTime = D
 
 // --- DATA ---
 const USER_DATABASE = [ { name: "xX_Slayer_Xx", gold: 1200, inventory: [] }, { name: "StreamerHost", gold: 99999, inventory: [] } ];
+let MATCHMAKING_QUEUE = [];
 const COLORS = ['#e74c3c', '#3498db', '#f1c40f', '#9b59b6']; 
 
 // --- GAME STATE ---
@@ -527,16 +532,47 @@ function checkMapValidity() {
 }
 function selectNewSquad() {
     players = []; squadNames = [];
-    let pool = [...USER_DATABASE].sort(() => 0.5 - Math.random());
+    
+    // PRIORITY QUEUE LOGIC
+    let selectedUsers = [];
+    
+    // 1. Take from Queue
+    while(selectedUsers.length < 4 && MATCHMAKING_QUEUE.length > 0) {
+        const name = MATCHMAKING_QUEUE.shift();
+        // Find existing data or create
+        let user = USER_DATABASE.find(u => u.name === name);
+        if(!user) { user = { name: name, gold: 0, inventory: [] }; USER_DATABASE.push(user); }
+        selectedUsers.push(user);
+    }
+    
+    // 2. Fill with DB Randoms if needed
+    if(selectedUsers.length < 4) {
+        let pool = [...USER_DATABASE].sort(() => 0.5 - Math.random());
+        for(let u of pool) {
+            if(selectedUsers.length >= 4) break;
+            if(!selectedUsers.includes(u)) selectedUsers.push(u);
+        }
+    }
+    
+    // 3. Fill with Bots
     let botIndex = 1;
-    while(pool.length < 4) pool.push({ name: `Bot_Viking${botIndex++}`, gold: 0, inventory: [], isBot: true });
-    let selectedUsers = pool.slice(0, 4);
+    while(selectedUsers.length < 4) {
+        selectedUsers.push({ name: `Bot_Viking${botIndex++}`, gold: 0, inventory: [], isBot: true });
+    }
+    
+    updateQueueUI(); // Refresh UI count
+
     selectedUsers.forEach((u, i) => {
         squadNames.push(u.name);
         players.push({ name: u.name, x: 9 + (i%2), y: 11, color: COLORS[i], skinIndex: i, holding: null, lives: u.inventory && u.inventory.includes('Iron Helm') ? 3 : 2, godMode: false, shield: 0, cooldown: 0, boatTime: 0, lastCmd: 'WAIT', lastActiveTime: Date.now(), isBot: u.isBot || false, frozen: false, element: null });
         if(players[i].godMode) players[i].lives = 999;
     });
     updateSquadUI(); updateChatPersona();
+}
+
+function updateQueueUI() {
+    const el = document.getElementById('queue-count');
+    if(el) el.innerText = MATCHMAKING_QUEUE.length;
 }
 
 // --- FIMBULWINTER & LOGIC ---
