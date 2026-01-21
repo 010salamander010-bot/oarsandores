@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Twitch Raid: Manager & Stream 0.1</title>
+    <title>Twitch Raid: Manager & Stream</title>
     <script src="https://cdn.jsdelivr.net/npm/comfy.js@latest/dist/comfy.min.js"></script>
     <style>
         :root { --bg-dark: #1a1a1a; --bg-panel: #2d2d2d; --accent: #9147ff; --text: #ffffff; }
@@ -239,6 +239,10 @@
                     <span id="tick-disp">1500ms</span>
                 </div>
                 <div class="setting-row">
+                    <label>Auto-Fill Bots:</label>
+                    <input type="checkbox" id="bot-toggle" checked onchange="toggleBots(this.checked)">
+                </div>
+                <div class="setting-row">
                     <label>Admin Add Player:</label>
                     <div style="display:flex; gap:5px;">
                         <input type="text" id="admin-add-name" placeholder="Name" style="width:100px;">
@@ -291,6 +295,7 @@
 // --- CONFIG ---
 let CONFIG = { tileSize: 40, gridW: 20, gridH: 15, tickRate: 1500 };
 let ASSET_SRCS = {}; 
+let BOT_AUTO_FILL = true; // Default ON
 
 function handleFileUpload(input, key, previewId) {
     const file = input.files[0];
@@ -343,6 +348,11 @@ function toggleAdBreak() {
         addSystemMessage("▶️ AD BREAK ENDED! Game Resumed.");
     }
 }
+function toggleBots(active) {
+    BOT_AUTO_FILL = active;
+    // Don't restart level, take effect next round
+    addSystemMessage(`🤖 Bots Auto-Fill set to: ${active}`);
+}
 
 function updateStatus(msg, isGreen) {
     document.getElementById('twitch-status-text').innerText = msg;
@@ -375,7 +385,6 @@ function handleJoin(username) {
         addSystemMessage(`👋 NEW RAIDER JOINED: ${username} (Queue: ${MATCHMAKING_QUEUE.length})`);
         updateQueueUI();
     } else {
-        // If already in DB, check if active or queued
         const inGame = players.some(p => p.name.toLowerCase() === username.toLowerCase());
         const inQueue = MATCHMAKING_QUEUE.includes(username);
         if(!inGame && !inQueue) {
@@ -539,7 +548,6 @@ function selectNewSquad() {
     // 1. Take from Queue
     while(selectedUsers.length < 4 && MATCHMAKING_QUEUE.length > 0) {
         const name = MATCHMAKING_QUEUE.shift();
-        // Find existing data or create
         let user = USER_DATABASE.find(u => u.name === name);
         if(!user) { user = { name: name, gold: 0, inventory: [] }; USER_DATABASE.push(user); }
         selectedUsers.push(user);
@@ -554,17 +562,36 @@ function selectNewSquad() {
         }
     }
     
-    // 3. Fill with Bots
-    let botIndex = 1;
-    while(selectedUsers.length < 4) {
-        selectedUsers.push({ name: `Bot_Viking${botIndex++}`, gold: 0, inventory: [], isBot: true });
+    // 3. Fill with Bots (IF ENABLED)
+    if (BOT_AUTO_FILL) {
+        let botIndex = 1;
+        while(selectedUsers.length < 4) {
+            selectedUsers.push({ name: `Bot_Viking${botIndex++}`, gold: 0, inventory: [], isBot: true });
+        }
     }
     
     updateQueueUI(); // Refresh UI count
 
     selectedUsers.forEach((u, i) => {
         squadNames.push(u.name);
-        players.push({ name: u.name, x: 9 + (i%2), y: 11, color: COLORS[i], skinIndex: i, holding: null, lives: u.inventory && u.inventory.includes('Iron Helm') ? 3 : 2, godMode: false, shield: 0, cooldown: 0, boatTime: 0, lastCmd: 'WAIT', lastActiveTime: Date.now(), isBot: u.isBot || false, frozen: false, element: null });
+        players.push({
+            name: u.name,
+            x: 9 + (i%2), y: 11,
+            color: COLORS[i],
+            skinIndex: i,
+            holding: null,
+            lives: u.inventory && u.inventory.includes('Iron Helm') ? 3 : 2,
+            godMode: u.godMode || false, // Use persisted godMode or default false
+            shield: 0,
+            cooldown: 0,
+            boatTime: 0,
+            lastCmd: 'WAIT',
+            lastActiveTime: Date.now(),
+            isBot: u.isBot || false,
+            botTick: 0, // Init bot tick
+            frozen: false,
+            element: null
+        });
         if(players[i].godMode) players[i].lives = 999;
     });
     updateSquadUI(); updateChatPersona();
@@ -1069,8 +1096,12 @@ function syncMobsDOM() { entityLayer.querySelectorAll('.mob-sprite').forEach(el 
 function handleBotBehavior(p) {
     if (p.lives <= 0 || p.frozen) return;
 
-    // 0. Nerf: Small chance to hesitate (stops them from being perfect speedrunners)
-    if (Math.random() < 0.15) { p.lastCmd = 'WAIT'; return; }
+    // 0. Speed Nerf: Move 1 tick, Wait 1 tick (50% speed vs players)
+    p.botTick = (p.botTick || 0) + 1;
+    if (p.botTick % 2 !== 0) { 
+        p.lastCmd = 'WAIT'; 
+        return; 
+    }
 
     // 1. Holding Item -> Run to Boat
     if (p.holding) {
